@@ -271,7 +271,8 @@ ngx_http_upstream_dynamic_handler(ngx_resolver_ctx_t *ctx)
         csockaddr = ctx->srvs[0].addrs[0].sockaddr;
         socklen = ctx->srvs[0].addrs[0].socklen;
 
-        if (ngx_cmp_sockaddr(pc->sockaddr, pc->socklen, csockaddr, socklen, 0)
+        // not usefull
+        if (ngx_cmp_sockaddr(pc->sockaddr, pc->socklen, csockaddr, socklen, ctx->srvs[0].port)
             == NGX_OK)
         {
             pc->resolved = NGX_HTTP_UPSTREAM_DR_OK;
