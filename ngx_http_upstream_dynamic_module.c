@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2010-2015 Alibaba Group Holding Limited
  */
@@ -129,7 +128,7 @@ ngx_http_upstream_init_dynamic(ngx_conf_t *cf,
     ngx_http_upstream_server_t            *server;
     ngx_str_t                              host;
 
-    ngx_log_error(NGX_LOG_DEBUG_HTTP, cf->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
                    "init dynamic resolve");
 
     dcf = ngx_http_conf_upstream_srv_conf(us,
@@ -238,7 +237,7 @@ ngx_http_upstream_dynamic_handler(ngx_resolver_ctx_t *ctx)
 
     if (ctx->state) {
 
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "%V could not be resolved (%i: %s)",
                       &ctx->name, ctx->state,
                       ngx_resolver_strerror(ctx->state));
@@ -261,7 +260,7 @@ ngx_http_upstream_dynamic_handler(ngx_resolver_ctx_t *ctx)
             addr.len = ngx_sock_ntop(ctx->addrs[i].sockaddr, ctx->addrs[i].socklen,
                                      text, NGX_SOCKADDR_STRLEN, 0);
 
-            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "name was resolved to %V", &addr);
         }
         }
@@ -288,7 +287,6 @@ ngx_http_upstream_dynamic_handler(ngx_resolver_ctx_t *ctx)
 
         ngx_memcpy(sockaddr, csockaddr, socklen);
         port = ctx->srvs[0].port;
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,"to port %d", port);
 
         switch (sockaddr->sa_family) {
 #if (NGX_HAVE_INET6)
@@ -400,7 +398,7 @@ ngx_http_upstream_get_dynamic_peer(ngx_peer_connection_t *pc, void *data)
     ngx_int_t                               rc;
     ngx_http_upstream_dynamic_srv_conf_t   *dscf;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "get dynamic peer");
 
     /* The "get" function will be called twice if
@@ -420,7 +418,7 @@ ngx_http_upstream_get_dynamic_peer(ngx_peer_connection_t *pc, void *data)
 
     if (pc->resolved == NGX_HTTP_UPSTREAM_DR_FAILED) {
 
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                        "resolve failed! fallback: %ui", dscf->fallback);
 
         switch (dscf->fallback) {
@@ -443,7 +441,7 @@ ngx_http_upstream_get_dynamic_peer(ngx_peer_connection_t *pc, void *data)
     if (dscf->fail_check
         && (ngx_time() - dscf->fail_check < dscf->fail_timeout))
     {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                        "in fail timeout period, fallback: %ui", dscf->fallback);
 
         switch (dscf->fallback) {
@@ -476,13 +474,13 @@ ngx_http_upstream_get_dynamic_peer(ngx_peer_connection_t *pc, void *data)
     /* resolve name */
 
     if (pc->host == NULL) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                        "load balancer doesn't support dyn resolve!");
         return NGX_OK;
     }
 
     if (ngx_inet_addr(pc->host->data, pc->host->len) != INADDR_NONE) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                        "host is an IP address, connect directly!");
         return NGX_OK;
     }
@@ -509,12 +507,16 @@ ngx_http_upstream_get_dynamic_peer(ngx_peer_connection_t *pc, void *data)
         return NGX_OK;
     }
 
-    ctx->name = *pc->host;
-    /* TODO remove */
-    // ctx->type = NGX_RESOLVE_A;
-    /* END */
-    // open srv 
+    // hard code here
+    // resolve name like test-1.kcs.kns.local
+    ngx_str_t  domain = ngx_string("kns.local");
+    ctx->name = domain;
+    // /* TODO remove */
+    // // ctx->type = NGX_RESOLVE_A;
+    // /* END */
+    // // open srv 
     ctx->service = *pc->host;
+    ctx->service.len = ctx->service.len - 10 ;
     ctx->handler = ngx_http_upstream_dynamic_handler;
     ctx->data = bp;
     ctx->timeout = clcf->resolver_timeout;
@@ -522,7 +524,7 @@ ngx_http_upstream_get_dynamic_peer(ngx_peer_connection_t *pc, void *data)
     u->dyn_resolve_ctx = ctx;
 
     if (ngx_resolve_name(ctx) != NGX_OK) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+        ngx_log_error(NGX_LOG_ERR, pc->log, 0,
                       "resolver name failed!\n");
 
         u->dyn_resolve_ctx = NULL;
@@ -540,7 +542,7 @@ ngx_http_upstream_free_dynamic_peer(ngx_peer_connection_t *pc, void *data,
 {
     ngx_http_upstream_dynamic_peer_data_t  *bp = data;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "free dynamic peer");
 
     bp->original_free_peer(pc, bp->data, state);
