@@ -26,7 +26,7 @@ expect config
 ```
 DNS SRV query: test1.kns.local
 ## Hard code current
-https://github.com/tiny1990/nginx-srv/blob/master/ngx_http_upstream_dynamic_module.c#L512
+https://github.com/tiny1990/nginx-srv/blob/master/ngx_http_upstream_dynamic_module.c#L512  
 server name needs endWith `kns.local`
 
 
